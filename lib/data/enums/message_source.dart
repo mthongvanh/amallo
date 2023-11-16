@@ -1,0 +1,4 @@
+enum MessageSource {
+  userInput,
+  generated;
+}
