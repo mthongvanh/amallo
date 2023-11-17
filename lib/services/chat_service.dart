@@ -52,7 +52,12 @@ class ChatService {
         .where((element) => element.chatUuid == message.chatUuid)
         .firstOrNull;
     if (archivedMessage != null) {
-      archivedMessage.finalizeFromJson(message.toJson());
+      archivedMessage.finalize(
+        context: message.context,
+        totalDuration: message.totalDuration,
+        evalCount: message.evalTokens,
+        evalDuration: message.evalDuration,
+      );
       if (save) {
         saveHistory();
       }

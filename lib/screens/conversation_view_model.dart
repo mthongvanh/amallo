@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
-import 'package:http/http.dart';
+import 'package:ollama_api_client/ollama_api_client.dart';
 
 import '../data/enums/message_source.dart';
 import '../data/models/chat.dart';
@@ -11,7 +10,6 @@ import '../data/models/message.dart';
 import '../data/models/settings.dart';
 import '../data/models/view_model_property.dart';
 import '../services/chat_service.dart';
-import '../services/ollama_client.dart';
 import '../services/settings_service.dart';
 
 class ConversationViewModel {
@@ -33,7 +31,7 @@ class ConversationViewModel {
   final ViewModelProperty<String?> incomingMessage =
       ViewModelProperty<String?>();
 
-  StreamedResponse? _response;
+  Stream<GenerateResponse>? _response;
   Message? _currentMessage;
 
   bool _didSaveChat = false;
@@ -76,57 +74,59 @@ class ConversationViewModel {
     busy.value = true;
 
     try {
-      _response = await client.postGenerate(
-        prompt,
-        context: messageContext,
-        model: selectedLanguageModel.value,
+      OllamaApiResult<Stream<GenerateResponse>?> result =
+          await client.generateStreamed(
+        GenerateRequestParams(
+          prompt: prompt,
+          context: messageContext,
+          model: selectedLanguageModel.value,
+        ),
       );
-      bool didStartResponse = false;
-      _response?.stream.listen((value) async {
-        /// reset the placeholder text on receiving the initial response
-        if (!didStartResponse) {
-          didStartResponse = true;
-          _currentMessage?.text = '';
-        }
 
-        _handleResponseGeneration(value);
-      });
+      if (result.success) {
+        bool didStartResponse = false;
+        _response = result.data;
+        _response?.listen((value) async {
+          /// reset the placeholder text on receiving the initial response
+          if (!didStartResponse) {
+            didStartResponse = true;
+            _currentMessage?.text = '';
+          }
+
+          _handleResponseGeneration(value);
+        });
+      } else {}
     } catch (e) {
-      debugPrint('error: ${e.toString()}\nreason: ${_response?.reasonPhrase}');
+      debugPrint('error: ${e.toString()}');
       busy.value = false;
     }
   }
 
-  void _handleResponseGeneration(value) {
+  void _handleResponseGeneration(GenerateResponse generated) {
     /// begin processing the incoming text
-    try {
-      var responseModel = jsonDecode(utf8.decoder.convert(value));
-      if (responseModel is Map<String, dynamic>) {
-        bool done = responseModel['done'] ?? false;
-        if (!done) {
-          /// append text to message
-          String currentText = _currentMessage?.text ?? '';
-          String? incomingText = responseModel['response'];
-          if (incomingText != null) {
-            _currentMessage?.text = currentText + incomingText;
-          }
-          incomingMessage.value = _currentMessage?.text;
-        } else {
-          /// update the message with final statistics and context
-          _currentMessage?.finalizeFromJson(responseModel);
-          if (_currentMessage != null) {
-            ChatService().updateMessage(_currentMessage!, save: true);
-          }
-          _currentMessage = null;
-          busy.value = false;
-        }
-      } else {
-        busy.value = false;
-        throw ('Unexpected response format');
+    if (!generated.done) {
+      /// append text to message
+      String currentText = _currentMessage?.text ?? '';
+      _currentMessage?.text = currentText + generated.response;
+      incomingMessage.value = _currentMessage?.text;
+    } else {
+      /// update the message with final statistics and context
+      _currentMessage?.finalize(
+        context: generated.context,
+        totalDuration: generated.totalDuration,
+        evalCount: generated.evalCount,
+        evalDuration: generated.evalDuration,
+      );
+
+      if (_currentMessage != null) {
+        ChatService().updateMessage(
+          _currentMessage!,
+          save: true,
+        );
       }
-    } catch (e) {
-      debugPrint(e.toString());
-      debugPrint(utf8.decoder.convert(value));
+
+      _currentMessage = null;
+      busy.value = false;
     }
   }
 
@@ -180,26 +180,27 @@ class ConversationViewModel {
   String exampleQuestion() {
     /// Here are 20 fun questions you could ask a generative AI:
     var questions = [
-    "What is your favorite joke, and can you tell it to me?",
-    "If you could be any fictional character, who would you choose and why?",
-    "What is the most creative thing you've ever generated? Can you show me?",
-    "What do you think of when I say the word \"spring\"?",
-    "If you could travel anywhere in the world right now, where would you go and what would you do?",
-    "What is your favorite type of music, and can you generate a song for me in that style?",
-    "Can you generate a haiku or other short poem for me?",
-    "If you could have any superpower, what would it be and why?",
-    "Can you generate a story for me about a character who learns to overcome their fears?",
-    "What do you think is the most challenging thing about being an AI, and how do you handle it?",
-    "If you could have dinner with any historical figure, who would it be and why?",
-    "Can you generate a piece of artwork for me, such as a painting or sculpture?",
-    "What is your favorite type of exercise, and can you recommend some exercises for me to try?",
-    "If you could have any animal as a pet, what would it be and why?",
-    "Can you generate a piece of music for me that incorporates elements from different cultures or time periods?",
-    "What is your favorite type of cuisine, and can you recommend some dishes or restaurants for me to try?",
-    "If you could have any fictional world or character as a friend, who would it be and why?",
-    "Can you generate a piece of writing for me that incorporates elements from different cultures or time periods?",
-    "What is your favorite type of hobby or activity, and can you recommend some things for me to try?",
-    "If you could have any type of supernatural ability, what would it be and why?"];
+      "What is your favorite joke, and can you tell it to me?",
+      "If you could be any fictional character, who would you choose and why?",
+      "What is the most creative thing you've ever generated? Can you show me?",
+      "What do you think of when I say the word \"spring\"?",
+      "If you could travel anywhere in the world right now, where would you go and what would you do?",
+      "What is your favorite type of music, and can you generate a song for me in that style?",
+      "Can you generate a haiku or other short poem for me?",
+      "If you could have any superpower, what would it be and why?",
+      "Can you generate a story for me about a character who learns to overcome their fears?",
+      "What do you think is the most challenging thing about being an AI, and how do you handle it?",
+      "If you could have dinner with any historical figure, who would it be and why?",
+      "Can you generate a piece of artwork for me, such as a painting or sculpture?",
+      "What is your favorite type of exercise, and can you recommend some exercises for me to try?",
+      "If you could have any animal as a pet, what would it be and why?",
+      "Can you generate a piece of music for me that incorporates elements from different cultures or time periods?",
+      "What is your favorite type of cuisine, and can you recommend some dishes or restaurants for me to try?",
+      "If you could have any fictional world or character as a friend, who would it be and why?",
+      "Can you generate a piece of writing for me that incorporates elements from different cultures or time periods?",
+      "What is your favorite type of hobby or activity, and can you recommend some things for me to try?",
+      "If you could have any type of supernatural ability, what would it be and why?"
+    ];
     return questions[Random().nextInt(questions.length)];
   }
 }

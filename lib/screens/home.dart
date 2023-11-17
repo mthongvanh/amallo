@@ -12,7 +12,6 @@ import 'package:uuid/uuid.dart';
 import '../data/models/chat.dart';
 import '../data/models/settings.dart';
 import '../services/chat_service.dart';
-import 'conversation_view_model.dart';
 
 class Home extends StatefulWidget {
   final HomeViewModel viewModel = HomeViewModel();
