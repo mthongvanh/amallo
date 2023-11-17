@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:amallo/screens/home.dart';
 import 'package:amallo/services/chat_service.dart';
 import 'package:amallo/services/database.dart';
-import 'package:amallo/services/ollama_client.dart';
 import 'package:amallo/services/settings_service.dart';
 import 'package:flutter/material.dart';
+import 'package:ollama_api_client/ollama_api_client.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -69,14 +69,15 @@ class SplashBloc {
     await ss.init();
 
     var server = await ss.serverAddress();
-    var port = await ss.serverPort();
-    var useSSL = await ss.useTLSSSL();
 
-    OllamaClient(
-      host: server,
-      port: port != null ? int.tryParse(port) : null,
-      requireSSL: useSSL ?? false,
-    );
+    Uri? host;
+    try {
+      host = Uri.tryParse(server ?? '');
+    } catch (e) {
+      debugPrint('invalid server');
+    }
+    var client = OllamaClient(host: host);
+    debugPrint("Ollama Client host: ${client.host}");
 
     _readyController.sink.add(cs);
   }

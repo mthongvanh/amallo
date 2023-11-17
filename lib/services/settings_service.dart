@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:amallo/services/ollama_client.dart';
+import 'package:amallo/data/enums/ollama_models.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/models/settings.dart';
@@ -59,18 +59,6 @@ class SettingService {
   Future<String?> serverAddress() async {
     return _box.get(
       Settings.serverAddress,
-    );
-  }
-
-  Future<String?> serverPort() async {
-    return _box.get(
-      Settings.serverPort,
-    );
-  }
-
-  Future<bool?> useTLSSSL() async {
-    return _box.get(
-      Settings.useTLSSSL,
     );
   }
 }

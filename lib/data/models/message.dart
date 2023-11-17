@@ -64,11 +64,16 @@ class Message {
     };
   }
 
-  Message finalizeFromJson(json) {
-    context = json['context'] as List?;
-    totalDuration = json['total_duration'] as int?;
-    evalTokens = json['eval_count'] as int?;
-    evalDuration = json['eval_duration'] as int?;
+  Message finalize({
+    context,
+    totalDuration,
+    evalCount,
+    evalDuration,
+  }) {
+    this.context = context;
+    this.totalDuration = totalDuration;
+    evalTokens = evalCount;
+    this.evalDuration = evalDuration;
     return this;
   }
 
