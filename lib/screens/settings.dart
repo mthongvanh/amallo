@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:amallo/data/models/settings.dart';
 import 'package:amallo/data/models/view_model_property.dart';
-import 'package:amallo/extensions/colors.dart';
 import 'package:amallo/screens/update_setting.dart';
-import 'package:amallo/services/settings_service.dart';
 
 import 'update_setting_view_model.dart';
 
@@ -40,15 +38,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: serverAddress(),
                 ),
-                Column(
-                  children: [
-                    const Text('Use SSL/TLS'),
-                    sslSwitch(),
-                  ],
-                ),
               ],
             ),
-            serverPort(),
             buildSetting<String>(
               settingDisplayName: 'Default Language Model',
               listenable: viewModel.modelDefault,
@@ -65,12 +56,6 @@ class _SettingsPageState extends State<SettingsPage> {
         settingDisplayName: 'Server Address',
         listenable: viewModel.serverAddress,
         settingKey: Settings.serverAddress,
-      );
-
-  Widget serverPort() => buildSetting(
-        settingDisplayName: 'Server Port',
-        listenable: viewModel.serverPort,
-        settingKey: Settings.serverPort,
       );
 
   Widget buildSetting<T>({
@@ -101,39 +86,16 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             );
           });
-
-  Widget sslSwitch() {
-    return ListenableBuilder(
-        listenable: viewModel.useSSL,
-        builder: (context, _) {
-          return Switch(
-            // This bool value toggles the switch.
-            value: viewModel.useSSL.value ?? false,
-            activeColor: AppColors.turquoise,
-            onChanged: (bool value) {
-              viewModel.useSSL.value = value;
-              SettingService().put(Settings.useTLSSSL, value);
-            },
-          );
-        });
-  }
 }
 
 class SettingPageViewModel {
   init() {
     serverAddress.bind(Settings.serverAddress);
-    serverPort.bind(Settings.serverPort);
     modelDefault.bind(Settings.defaultLocalModelIdentifier);
-    useSSL.bind(Settings.useTLSSSL);
   }
 
   final ViewModelProperty<String> serverAddress =
       ViewModelProperty<String>('localhost');
 
-  final ViewModelProperty<String> serverPort =
-      ViewModelProperty<String>('11434');
-
   final ViewModelProperty<String?> modelDefault = ViewModelProperty<String?>();
-
-  final ViewModelProperty<bool?> useSSL = ViewModelProperty<bool?>();
 }

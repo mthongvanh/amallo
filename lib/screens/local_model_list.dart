@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:amallo/data/models/view_model_property.dart';
 import 'package:flutter/material.dart';
-import 'package:amallo/services/ollama_client.dart';
+// import 'package:amallo/services/ollama_client.dart';
 import 'package:amallo/services/settings_service.dart';
 import 'package:amallo/widgets/loading.dart';
+import 'package:ollama_api_client/ollama_api_client.dart';
 
 class LocalModelList extends StatefulWidget {
   final LocalModelListViewModel _viewModel = LocalModelListViewModel();
@@ -94,16 +95,17 @@ class LocalModelService {
   Future<List<LocalModel?>?> getTags() async {
     List<LocalModel?>? data;
     try {
-      final host = await SettingService().serverAddress();
-      final port = await SettingService().serverPort();
-      final useSSL = await SettingService().useTLSSSL();
-
-      var d = await OllamaClient().getTags(
-        host: host,
-        port: port,
-        requireSSL: useSSL,
-      );
-      data = d.map((value) => LocalModel.fromMap(value)).toList();
+      OllamaApiResult<ListResponse?> result = await OllamaClient().tags();
+      if (result.success) {
+        data = result.data?.models.map((tagModel) {
+          return LocalModel(
+            tagModel.name,
+            tagModel.digest,
+            tagModel.size,
+            tagModel.modifiedAt,
+          );
+        }).toList();
+      } else {}
     } catch (e) {
       debugPrint(e.toString());
     }

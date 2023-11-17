@@ -69,14 +69,6 @@ class SplashBloc {
     await ss.init();
 
     var server = await ss.serverAddress();
-    var port = await ss.serverPort();
-    var useSSL = await ss.useTLSSSL();
-
-    // OllamaClient(
-    //   host: server,
-    //   port: port != null ? int.tryParse(port) : null,
-    //   requireSSL: useSSL ?? false,
-    // );
 
     Uri? host;
     try {
