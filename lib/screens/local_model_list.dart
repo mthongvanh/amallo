@@ -2,26 +2,26 @@ import 'dart:async';
 
 import 'package:amallo/data/models/view_model_property.dart';
 import 'package:flutter/material.dart';
-// import 'package:amallo/services/ollama_client.dart';
-import 'package:amallo/services/settings_service.dart';
 import 'package:amallo/widgets/loading.dart';
-import 'package:ollama_api_client/ollama_api_client.dart';
+import 'package:ollama_dart/ollama_dart.dart';
 
 class LocalModelList extends StatefulWidget {
-  final LocalModelListViewModel _viewModel = LocalModelListViewModel();
+  static const routeName = 'LocalModelList';
 
   final Future Function(LocalModel?)? onSelectItem;
 
-  LocalModelList({super.key, this.onSelectItem});
+  const LocalModelList({super.key, this.onSelectItem});
 
   @override
   State<LocalModelList> createState() => _LocalModelListState();
 }
 
 class _LocalModelListState extends State<LocalModelList> {
+  final LocalModelListViewModel _viewModel = LocalModelListViewModel();
+
   @override
   void initState() {
-    widget._viewModel.init();
+    _viewModel.init();
     super.initState();
   }
 
@@ -33,9 +33,9 @@ class _LocalModelListState extends State<LocalModelList> {
         header(),
         Expanded(
           child: ListenableBuilder(
-              listenable: widget._viewModel.localModels,
+              listenable: _viewModel.localModels,
               builder: (ctx, _) {
-                List<LocalModel?>? models = widget._viewModel.localModels.value;
+                List<LocalModel?>? models = _viewModel.localModels.value;
                 if (models == null) {
                   return const Center(
                     child: LoadingWidget(
@@ -48,15 +48,74 @@ class _LocalModelListState extends State<LocalModelList> {
                   );
                 }
                 return ListView.builder(
-                    itemCount: widget._viewModel.localModels.value?.length ?? 0,
+                    itemCount: _viewModel.localModels.value?.length ?? 0,
                     itemBuilder: (ctx, index) {
                       LocalModel? m = models[index];
                       return GestureDetector(
                         onTap: () {
                           widget.onSelectItem?.call(m);
                         },
-                        child: ListTile(
-                            title: Text(m?.name ?? 'Unknown model name')),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              title: Text(
+                                m?.name ?? 'Unknown model name',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    m?.sizeOnDisk ?? 'Unknown size',
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 24.0),
+                                    child: IconButton(
+                                      onPressed: () {},
+                                      icon: const Icon(
+                                        Icons.copy,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                          context: context,
+                                          builder: (ctx) {
+                                            return AlertDialog.adaptive(
+                                              content: Text(
+                                                  'Are you sure that you want to delete ${m?.name ?? 'this model'}?'),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(ctx).pop();
+                                                    },
+                                                    child: const Text('Yes')),
+                                                TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(ctx).pop();
+                                                    },
+                                                    child: const Text('No')),
+                                              ],
+                                            );
+                                          });
+                                    },
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Divider(
+                              height: 0.5,
+                              color: Colors.grey.withOpacity(0.35),
+                            ),
+                          ],
+                        ),
                       );
                     });
               }),
@@ -95,14 +154,14 @@ class LocalModelService {
   Future<List<LocalModel?>?> getTags() async {
     List<LocalModel?>? data;
     try {
-      OllamaApiResult<ListResponse?> result = await OllamaClient().tags();
-      if (result.success) {
-        data = result.data?.models.map((tagModel) {
+      ModelsResponse result = await OllamaClient().listModels();
+      if (result.models?.isNotEmpty ?? false) {
+        data = result.models!.map((Model tagModel) {
           return LocalModel(
-            tagModel.name,
-            tagModel.digest,
-            tagModel.size,
-            tagModel.modifiedAt,
+            tagModel.name ?? '',
+            '',
+            tagModel.size ?? 0,
+            tagModel.modifiedAt ?? '',
           );
         }).toList();
       } else {}
@@ -149,4 +208,6 @@ class LocalModel {
       "digest": digest,
     };
   }
+
+  String get sizeOnDisk => "${(size / 1024e6).toStringAsFixed(1)} GB";
 }

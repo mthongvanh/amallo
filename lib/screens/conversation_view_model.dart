@@ -11,6 +11,7 @@ import '../data/models/settings.dart';
 import '../data/models/view_model_property.dart';
 import '../services/chat_service.dart';
 import '../services/settings_service.dart';
+import 'local_model_list.dart';
 
 class ConversationViewModel {
   final String chatUuid;
@@ -31,7 +32,10 @@ class ConversationViewModel {
   final ViewModelProperty<String?> incomingMessage =
       ViewModelProperty<String?>();
 
+  final ViewModelProperty<String> scaffoldTitle = ViewModelProperty<String>();
+
   Stream<GenerateResponse>? _response;
+
   Message? _currentMessage;
 
   bool _didSaveChat = false;
@@ -39,11 +43,33 @@ class ConversationViewModel {
 
   ConversationViewModel(this.chatUuid);
 
-  init() async {
-    await currentLanguageModel.bind(Settings.selectedLocalModelIdentifier);
-    SettingService()
-        .currentLanguageModel()
-        .then((value) => currentLanguageModel.value = value);
+  init(bool archivedConversation) async {
+    if (archivedConversation) {
+      List<Message> messages = ChatService()
+          .history
+          .where((element) => element.chatUuid == chatUuid)
+          .toList();
+      thread.value?.load(messages);
+
+      Message? generatedMessage = messages
+          .map((element) =>
+              (element.model?.isNotEmpty ?? false) ? element : null)
+          .toList()
+          .first;
+      if (generatedMessage?.model?.isNotEmpty ?? false) {
+        scaffoldTitle.value = messages.first.model;
+      }
+    } else {
+      await currentLanguageModel.bind(Settings.selectedLocalModelIdentifier);
+      SettingService()
+          .currentLanguageModel()
+          .then((value) => currentLanguageModel.value = value);
+
+      await scaffoldTitle.bind(Settings.selectedLocalModelIdentifier);
+      SettingService()
+          .currentLanguageModel()
+          .then((value) => scaffoldTitle.value = value);
+    }
   }
 
   Future generateFromPrompt([promptText]) async {
@@ -53,7 +79,13 @@ class ConversationViewModel {
     }
 
     List? messageContext;
-    await addMessage(_createMessage(MessageSource.userInput, prompt));
+    await addMessage(
+      _createMessage(
+        MessageSource.userInput,
+        prompt,
+        modelName: selectedLanguageModel.value ?? scaffoldTitle.value,
+      ),
+    );
 
     /// continue/begin a new conversation
     Message m;
@@ -161,7 +193,7 @@ class ConversationViewModel {
   }
 
   Message _createMessage(MessageSource type, String message,
-      {context, Map<String, dynamic>? summary}) {
+      {String? modelName, context, Map<String, dynamic>? summary}) {
     return Message.fromMap({
       "source": type == MessageSource.userInput
           ? MessageSource.userInput.name
@@ -170,11 +202,23 @@ class ConversationViewModel {
       "chatUuid": chatUuid,
       "createdOn": DateTime.now().millisecondsSinceEpoch,
       "context": context,
-      "model": summary?["model"] ?? '',
+      "model": modelName ?? summary?["model"],
       "total_duration": summary?["total_duration"] ?? 0,
       "eval_count": summary?["eval_count"] ?? 0,
       "eval_duration": summary?["eval_duration"] ?? 0,
     });
+  }
+
+  loadModels() async {
+    // var currentModel =
+    //     await SettingService().get(Settings.selectedLocalModelIdentifier);
+    // if (currentModel == null) {
+    List<LocalModel?>? models = await LocalModelService().getTags();
+    var local = models?.lastOrNull;
+    if (local != null) {
+      SettingService().put(Settings.selectedLocalModelIdentifier, local.name);
+    }
+    // }
   }
 
   String exampleQuestion() {

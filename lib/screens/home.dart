@@ -3,14 +3,13 @@ import 'package:amallo/extensions/colors.dart';
 import 'package:amallo/screens/chats.dart';
 import 'package:amallo/screens/conversation.dart';
 import 'package:amallo/screens/local_model_list.dart';
+import 'package:amallo/screens/model_details/model_details.dart';
 import 'package:amallo/screens/settings.dart';
 import 'package:amallo/services/screen_service.dart';
-import 'package:amallo/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/models/chat.dart';
-import '../data/models/settings.dart';
 import '../services/chat_service.dart';
 
 class Home extends StatefulWidget {
@@ -31,7 +30,7 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
-    widget.viewModel.init();
+    // widget.viewModel.init();
     super.initState();
   }
 
@@ -63,7 +62,7 @@ class _HomeState extends State<Home> {
           },
         );
 
-        return Row(
+        var contentRow = Row(
           children: [
             /// build chat listing
             (screenSize != ScreenSize.extraLarge
@@ -81,79 +80,138 @@ class _HomeState extends State<Home> {
             Flexible(
               flex: 5,
               child: Scaffold(
-                appBar: AppBar(
-                  backgroundColor: Colors.black12,
-                  leading: buildCreateConversationButton(),
-                  actions: [
-                    buildSettingsButton(context),
-                  ],
-                  title: buildTitle(context),
-                ),
                 backgroundColor: Colors.transparent,
                 body: Navigator(
                   key: _contentNavigatorKey,
                   initialRoute: ConversationPage.routeName,
                   onGenerateRoute: _generateRoute,
                 ),
+                bottomNavigationBar: screenSize != ScreenSize.extraLarge
+                    ? _buildBottomNavigation()
+                    : null,
               ),
             ),
           ],
         );
+
+        if (screenSize == ScreenSize.extraLarge) {
+          return Row(
+            children: [
+              _buildNavigationRail(),
+              Expanded(child: contentRow),
+            ],
+          );
+        } else {
+          return contentRow;
+        }
       }),
     );
   }
 
-  IconButton buildCreateConversationButton() {
-    return IconButton(
-      onPressed: () {
-        _contentNavigatorKey.currentState?.pushNamedAndRemoveUntil(
-          ConversationPage.routeName,
-          (route) => false,
-        );
-      },
-      icon: const Icon(Icons.add),
-      color: Colors.white,
-    );
+  Widget buildNavigation(ScreenSize screenSize) {
+    if (screenSize == ScreenSize.extraLarge) {
+      return _buildNavigationRail();
+    } else {
+      return _buildBottomNavigation();
+    }
   }
 
-  IconButton buildSettingsButton(BuildContext context) {
-    return IconButton(
-      onPressed: () {
-        showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return Navigator(
-                initialRoute: SettingsPage.routeName,
-                onGenerateInitialRoutes: (navigator, initialRoute) {
-                  return [
-                    MaterialPageRoute(builder: (ctx) => const SettingsPage()),
-                  ];
-                },
-              );
-            });
-      },
-      icon: const Icon(Icons.handyman_outlined),
-      color: Colors.white,
-    );
+  Widget _buildBottomNavigation() {
+    return ListenableBuilder(
+        listenable: widget.viewModel.selectedIndex,
+        builder: (context, _) {
+          return BottomNavigationBar(
+            backgroundColor: Colors.black38,
+            elevation: 0,
+            selectedLabelStyle: const TextStyle(color: Colors.white),
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.grey,
+            unselectedIconTheme: const IconThemeData(color: Colors.grey),
+            currentIndex: widget.viewModel.selectedIndex.value ?? 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.grey,
+                ),
+                activeIcon: Icon(
+                  Icons.chat,
+                  color: Colors.white,
+                ),
+                label: 'Chat',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.list_outlined,
+                  color: Colors.grey,
+                ),
+                activeIcon: Icon(
+                  Icons.list,
+                  color: Colors.white,
+                ),
+                label: 'Models',
+              ),
+            ],
+            onTap: (index) {
+              widget.viewModel.selectedIndex.value = index;
+              loadNavigationItem(index);
+            },
+          );
+        });
   }
 
-  TextButton buildTitle(BuildContext context) {
-    return TextButton(
-      style: ButtonStyle(
-          foregroundColor:
-              MaterialStateColor.resolveWith((states) => Colors.white)),
-      child: ListenableBuilder(
-          listenable: widget.viewModel.scaffoldTitle,
-          builder: (context, _) {
-            return Text(
-              widget.viewModel.scaffoldTitle.value ?? '',
-              style: const TextStyle(fontSize: 20),
-            );
-          }),
-      onPressed: () {
-        showBottomModal(context);
-      },
-    );
+  Widget _buildNavigationRail() {
+    return ListenableBuilder(
+        listenable: widget.viewModel.selectedIndex,
+        builder: (context, _) {
+          return NavigationRail(
+            backgroundColor: Colors.black38,
+            destinations: const <NavigationRailDestination>[
+              NavigationRailDestination(
+                icon: Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                ),
+                selectedIcon: Icon(Icons.chat_bubble),
+                label: Text('Chat'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(
+                  Icons.list_outlined,
+                  color: Colors.white,
+                ),
+                selectedIcon: Icon(Icons.list),
+                label: Text('Workspace'),
+              ),
+            ],
+            selectedIndex: widget.viewModel.selectedIndex.value,
+            onDestinationSelected: (index) {
+              widget.viewModel.selectedIndex.value = index;
+              loadNavigationItem(index);
+            },
+          );
+        });
+  }
+
+  loadNavigationItem(int index) {
+    switch (index) {
+      case 0:
+
+        /// load conversations
+        _contentNavigatorKey.currentState
+            ?.pushReplacementNamed(ConversationPage.routeName);
+        break;
+      case 1:
+
+        /// load model list
+        _contentNavigatorKey.currentState
+            ?.pushReplacementNamed(LocalModelList.routeName);
+        break;
+
+      default:
+        _contentNavigatorKey.currentState
+            ?.pushReplacementNamed(ConversationPage.routeName);
+    }
   }
 
   Route _generateRoute(RouteSettings settings) {
@@ -162,6 +220,21 @@ class _HomeState extends State<Home> {
         {
           return MaterialPageRoute(builder: (ctx) => const SettingsPage());
         }
+      case LocalModelList.routeName:
+        return MaterialPageRoute(
+            builder: (ctx) => LocalModelList(
+                  onSelectItem: (item) async {
+                    _contentNavigatorKey.currentState?.pushNamed(
+                      ModelDetails.routeName,
+                      arguments: item?.name,
+                    );
+                  },
+                ));
+      case ModelDetails.routeName:
+        return MaterialPageRoute(
+            builder: (ctx) => ModelDetails(
+                  modelTag: settings.arguments as String,
+                ));
       case ConversationPage.routeName:
       default:
         {
@@ -183,43 +256,44 @@ class _HomeState extends State<Home> {
     }
   }
 
-  void showBottomModal(context) {
-    showModalBottomSheet(
-        context: context,
-        builder: (ctx) => LocalModelList(
-              onSelectItem: (LocalModel? model) async {
-                if (model != null) {
-                  await SettingService()
-                      .put(Settings.selectedLocalModelIdentifier, model.name);
-                  widget.viewModel.scaffoldTitle.value = model.name;
-                }
+  // void showBottomModal(context) {
+  //   showModalBottomSheet(
+  //       context: context,
+  //       builder: (ctx) => LocalModelList(
+  //             onSelectItem: (LocalModel? model) async {
+  //               if (model != null) {
+  //                 await SettingService()
+  //                     .put(Settings.selectedLocalModelIdentifier, model.name);
+  //                 widget.viewModel.scaffoldTitle.value = model.name;
+  //               }
 
-                Navigator.of(context).pop();
-              },
-            ));
-  }
+  //               Navigator.of(context).pop();
+  //             },
+  //           ));
+  // }
 }
 
 class HomeViewModel {
   final ViewModelProperty<Widget> chatListPage = ViewModelProperty<Widget>();
-  final ViewModelProperty<String> scaffoldTitle = ViewModelProperty<String>();
+  // final ViewModelProperty<String> scaffoldTitle = ViewModelProperty<String>();
+  final ViewModelProperty<int> selectedIndex = ViewModelProperty<int>(0);
 
-  init() {
-    scaffoldTitle.bind(Settings.selectedLocalModelIdentifier);
-    SettingService()
-        .currentLanguageModel()
-        .then((value) => scaffoldTitle.value = value);
-  }
+  // init() {
+  //   scaffoldTitle.bind(Settings.selectedLocalModelIdentifier);
+  //   SettingService()
+  //       .currentLanguageModel()
+  //       .then((value) => scaffoldTitle.value = value);
+  // }
 
-  loadModels() async {
-    // var currentModel =
-    //     await SettingService().get(Settings.selectedLocalModelIdentifier);
-    // if (currentModel == null) {
-    List<LocalModel?>? models = await LocalModelService().getTags();
-    var local = models?.lastOrNull;
-    if (local != null) {
-      SettingService().put(Settings.selectedLocalModelIdentifier, local.name);
-    }
-    // }
-  }
+  // loadModels() async {
+  //   // var currentModel =
+  //   //     await SettingService().get(Settings.selectedLocalModelIdentifier);
+  //   // if (currentModel == null) {
+  //   List<LocalModel?>? models = await LocalModelService().getTags();
+  //   var local = models?.lastOrNull;
+  //   if (local != null) {
+  //     SettingService().put(Settings.selectedLocalModelIdentifier, local.name);
+  //   }
+  //   // }
+  // }
 }

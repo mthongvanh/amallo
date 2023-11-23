@@ -6,6 +6,7 @@ import 'package:amallo/services/database.dart';
 import 'package:amallo/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:ollama_api_client/ollama_api_client.dart';
+import 'package:ollama_dart/ollama_dart.dart' as ol;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
