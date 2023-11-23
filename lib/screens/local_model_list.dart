@@ -74,7 +74,90 @@ class _LocalModelListState extends State<LocalModelList> {
                                   Padding(
                                     padding: const EdgeInsets.only(left: 24.0),
                                     child: IconButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        showDialog(
+                                            context: context,
+                                            builder: (ctx) {
+                                              return Material(
+                                                color: Colors.transparent,
+                                                child: AlertDialog.adaptive(
+                                                  content: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(8.0),
+                                                        child: Text(
+                                                          'To make a copy of ${m?.name ?? 'this model'}, please enter a name without spaces or special characters.',
+                                                        ),
+                                                      ),
+                                                      // TextField(
+                                                      //   controller: _viewModel
+                                                      //       .sourceController,
+                                                      //   decoration:
+                                                      //       const InputDecoration(
+                                                      //     label: Text(
+                                                      //       'Source Model',
+                                                      //     ),
+                                                      //   ),
+                                                      //   smartDashesType:
+                                                      //       SmartDashesType
+                                                      //           .disabled,
+                                                      // ),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(8.0),
+                                                        child: TextField(
+                                                          controller: _viewModel
+                                                              .destinationController,
+                                                          decoration:
+                                                              const InputDecoration(
+                                                            label: Text(
+                                                              'Copy Name',
+                                                            ),
+                                                          ),
+                                                          smartDashesType:
+                                                              SmartDashesType
+                                                                  .disabled,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(ctx,
+                                                                  rootNavigator:
+                                                                      true)
+                                                              .pop();
+                                                          _performCopy(
+                                                            ctx,
+                                                            source: m?.name,
+                                                            destination: _viewModel
+                                                                .destinationController
+                                                                .text,
+                                                          );
+
+                                                        },
+                                                        child:
+                                                            const Text('Yes')),
+                                                    TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(ctx,
+                                                                  rootNavigator:
+                                                                      true)
+                                                              .pop();
+                                                        },
+                                                        child:
+                                                            const Text('No')),
+                                                  ],
+                                                ),
+                                              );
+                                            });
+                                      },
                                       icon: const Icon(
                                         Icons.copy,
                                       ),
@@ -91,12 +174,22 @@ class _LocalModelListState extends State<LocalModelList> {
                                               actions: [
                                                 TextButton(
                                                     onPressed: () {
-                                                      Navigator.of(ctx).pop();
+                                                      Navigator.of(ctx,
+                                                              rootNavigator:
+                                                                  true)
+                                                          .pop();
+                                                      _performDelete(
+                                                        ctx,
+                                                        modelName: m?.name,
+                                                      );
                                                     },
                                                     child: const Text('Yes')),
                                                 TextButton(
                                                     onPressed: () {
-                                                      Navigator.of(ctx).pop();
+                                                      Navigator.of(ctx,
+                                                              rootNavigator:
+                                                                  true)
+                                                          .pop();
                                                     },
                                                     child: const Text('No')),
                                               ],
@@ -124,6 +217,63 @@ class _LocalModelListState extends State<LocalModelList> {
     );
   }
 
+  void _performDelete(BuildContext localContext, {String? modelName}) {
+    ScaffoldMessengerState? messenger = ScaffoldMessenger.of(localContext);
+    try {
+      _viewModel.delete(modelName).then((value) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text("${modelName ?? 'Model'} has been deleted"),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _performCopy(BuildContext localContext,
+      {String? source, String? destination}) {
+    ScaffoldMessengerState? messenger = ScaffoldMessenger.of(localContext);
+    try {
+      _viewModel.copy(source, destination).then((value) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                "Created a new model: $destination has been created from $source",
+              ),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString(),
+          ),
+        ),
+      );
+    }
+  }
+
+  showAlertDialog(context, alert) {
+    showDialog(
+        context: context,
+        builder: (ctx) {
+          return alert;
+        });
+  }
+
   Widget header() {
     return Center(
       child: Padding(
@@ -139,13 +289,54 @@ class LocalModelListViewModel {
   final localModels = ViewModelProperty<List<LocalModel?>>([]);
   final LocalModelService _service = LocalModelService();
 
+  final TextEditingController sourceController = TextEditingController();
+  final TextEditingController destinationController = TextEditingController();
+
   LocalModelListViewModel();
 
   init() {
+    getTags();
+  }
+
+  Future<void> getTags() async {
     try {
-      _service.getTags().then((value) => localModels.value = value);
+      List<LocalModel?>? models = await _service.getTags();
+      localModels.value = models;
     } catch (e) {
       debugPrint(e.toString());
+    }
+  }
+
+  Future<void> delete(String? modelName) async {
+    if (modelName == null || modelName.isEmpty) {
+      throw Exception('model name is required');
+    }
+
+    try {
+      await _service.deleteModel(modelName);
+      await getTags();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> copy(String? source, String? destination) async {
+    if ([source, destination]
+        .where((element) => element == null || element.isEmpty)
+        .isNotEmpty) {
+      throw Exception("A source and destination model are required");
+    } else if (source!.trim().toLowerCase() ==
+        destination!.trim().toLowerCase()) {
+      throw Exception("The names must be different");
+    }
+
+    try {
+      await _service.copyModel(source, destination: destination);
+      await getTags();
+      sourceController.text = '';
+      destinationController.text = '';
+    } catch (e) {
+      rethrow;
     }
   }
 }
@@ -169,6 +360,29 @@ class LocalModelService {
       debugPrint(e.toString());
     }
     return data;
+  }
+
+  Future deleteModel(String modelName) async {
+    try {
+      await OllamaClient()
+          .deleteModel(request: DeleteModelRequest(name: modelName));
+    } catch (e) {
+      debugPrint(e.toString());
+      rethrow;
+    }
+  }
+
+  Future copyModel(String source, {required String destination}) async {
+    try {
+      await OllamaClient().copyModel(
+          request: CopyModelRequest(
+        source: source,
+        destination: destination,
+      ));
+    } catch (e) {
+      debugPrint(e.toString());
+      rethrow;
+    }
   }
 }
 

@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:amallo/data/models/view_model_property.dart';
 import 'package:flutter/material.dart';
 import 'package:amallo/widgets/loading.dart';
 import 'package:ollama_dart/ollama_dart.dart';
