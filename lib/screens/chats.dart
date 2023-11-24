@@ -16,7 +16,6 @@ class Chats extends StatelessWidget {
     return ValueListenableBuilder(
         valueListenable: _chatService.chats,
         builder: (context, value, _) {
-          value = [];
           if (value.isEmpty) {
             return Align(
               alignment: Alignment.topCenter,

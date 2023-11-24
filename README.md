@@ -1,6 +1,10 @@
 # amallo
 
 Simple GUI to query a local Ollama API server for inference written in Flutter
+- Add models from Ollama servers
+- Copy/Delete installed models
+- View Modelfile information, including system prompt template and model parameters
+- Save/Delete conversations
 
 ![screenshot](/screenshot.png) 
 
@@ -24,4 +28,4 @@ Flutter 3.13.2
 Dart 3.1.0
 
 Tested on:
-macOS Sonoma (15.0 beta) & Xcode 14.3.1
+macOS Sonoma (14.0) & Xcode 14.3.1

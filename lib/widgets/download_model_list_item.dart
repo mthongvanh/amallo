@@ -39,9 +39,9 @@ class _DownloadModelListItemState extends State<DownloadModelListItem> {
   }
 
   buildCompletedView(BuildContext context) {
-    return widget._pullModelTask.error?.isEmpty == true
-        ? buildSuccessView()
-        : buildErroView(context);
+    return widget._pullModelTask.error?.isNotEmpty == true
+        ? buildErroView(context)
+        : buildSuccessView();
   }
 
   buildSuccessView() {
