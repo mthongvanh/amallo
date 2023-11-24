@@ -16,6 +16,34 @@ class Chats extends StatelessWidget {
     return ValueListenableBuilder(
         valueListenable: _chatService.chats,
         builder: (context, value, _) {
+          value = [];
+          if (value.isEmpty) {
+            return Align(
+              alignment: Alignment.topCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 18.0,
+                    ),
+                    child: Text(
+                      'No Chats Here Yet!',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const Image(
+                    height: 150,
+                    // width: 150,
+                    image: AssetImage(
+                      'assets/images/chat-llama.png',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           /// reverse the order so newer questions are at the top
           value.sort((a, b) => (b.createdOn ?? 0).compareTo(a.createdOn ?? 0));
           return Container(
