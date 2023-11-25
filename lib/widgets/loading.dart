@@ -15,7 +15,15 @@ class LoadingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox.square(
       dimension: dimension,
-      child: Lottie.asset('assets/loading.json'),
+      child: Lottie.asset(assetName),
     );
   }
+}
+
+enum LottieAnimations {
+  chilipaca('assets/chilipaca.json');
+
+  final String path;
+
+  const LottieAnimations(this.path);
 }

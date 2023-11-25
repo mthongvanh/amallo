@@ -1,3 +1,4 @@
+import 'package:amallo/widgets/elapsed_time.dart';
 import 'package:flutter/material.dart';
 
 import '../data/models/chat.dart';
@@ -15,6 +16,33 @@ class Chats extends StatelessWidget {
     return ValueListenableBuilder(
         valueListenable: _chatService.chats,
         builder: (context, value, _) {
+          if (value.isEmpty) {
+            return Align(
+              alignment: Alignment.topCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 18.0,
+                    ),
+                    child: Text(
+                      'No Chats Here Yet!',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const Image(
+                    height: 150,
+                    // width: 150,
+                    image: AssetImage(
+                      'assets/images/chat-llama.png',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           /// reverse the order so newer questions are at the top
           value.sort((a, b) => (b.createdOn ?? 0).compareTo(a.createdOn ?? 0));
           return Container(
@@ -47,15 +75,36 @@ class Chats extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16.0, vertical: 8.0),
-                        child: Text(
-                          value.isEmpty
-                              ? 'nothing yet!'
-                              : value[index].title?.trim() ?? 'Untitled',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.white),
-                          maxLines: 2,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              value.isEmpty
+                                  ? 'nothing yet!'
+                                  : value[index].title?.trim() ?? 'Untitled',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(color: Colors.white),
+                              maxLines: 2,
+                            ),
+                            const SizedBox(
+                              height: 4,
+                            ),
+                            Align(
+                              alignment: Alignment.bottomLeft,
+                              child: ElapsedTimeWidget(
+                                startDateTime:
+                                    DateTime.fromMillisecondsSinceEpoch(
+                                        value[index].createdOn ?? 0),
+                                dateTextStyle: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(color: Colors.white60),
+                              ),
+                            )
+                          ],
                         ),
                       ),
                     ),

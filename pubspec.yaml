@@ -4,7 +4,7 @@ description: Simple front-end UI to query a local Ollama API server
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.0.1+5
+version: 0.0.1+9
 
 environment:
   sdk: '>=3.1.0 <4.0.0'
@@ -25,6 +25,7 @@ dependencies:
   google_fonts:
   hive_flutter:
   http:
+  intl: ^0.18.1
   isar: ^3.1.0+1
   isar_flutter_libs: ^3.1.0+1
   lottie: ^2.6.0
@@ -32,7 +33,9 @@ dependencies:
 
   ollama_api_client:
     path: ../ollama_api_client/
-    
+  
+  ollama_dart: ^0.0.1
+
   path_provider: 
   uuid:
 
@@ -63,8 +66,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/bg.png
-    - assets/loading.json
+    # - assets/images/bg.png
+    # - assets/loading.json
+    - assets/
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

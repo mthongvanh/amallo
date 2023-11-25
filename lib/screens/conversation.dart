@@ -12,9 +12,12 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:amallo/widgets/loading.dart';
 
 import '../data/enums/message_source.dart';
-import '../services/chat_service.dart';
+import '../data/models/settings.dart';
+import '../services/settings_service.dart';
 import '../widgets/message_card.dart';
 import 'conversation_view_model.dart';
+import 'local_model_list.dart';
+import 'settings.dart';
 
 class ConversationPage extends StatefulWidget {
   static const String routeName = 'conversation';
@@ -35,40 +38,39 @@ class ConversationPage extends StatefulWidget {
 }
 
 class _ConversationPageState extends State<ConversationPage> {
-
   late ConversationViewModel viewModel;
 
   @override
   void initState() {
-
     viewModel = ConversationViewModel(widget._chatUuid);
-
-    viewModel.init();
-
-    if (widget.archivedConversation) {
-      List<Message> messages = ChatService()
-          .history
-          .where((element) => element.chatUuid == widget._chatUuid)
-          .toList();
-      viewModel.thread.value?.load(messages);
-    }
-
+    viewModel.init(widget.archivedConversation);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-        valueListenable: viewModel.busy,
-        builder: (context, busyValue, _) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              buildChatContent(context, busyValue),
-              buildPromptInputField(),
-            ],
-          );
-        });
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black12,
+        leading: buildCreateConversationButton(),
+        actions: [
+          buildSettingsButton(context),
+        ],
+        title: buildTitle(context),
+      ),
+      backgroundColor: Colors.transparent,
+      body: ValueListenableBuilder(
+          valueListenable: viewModel.busy,
+          builder: (context, busyValue, _) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                buildChatContent(context, busyValue),
+                buildPromptInputField(),
+              ],
+            );
+          }),
+    );
   }
 
   Expanded buildChatContent(BuildContext context, bool busyValue) {
@@ -122,8 +124,7 @@ class _ConversationPageState extends State<ConversationPage> {
               child: ListenableBuilder(
                   listenable: viewModel.selectedLanguageModel,
                   builder: (context, _) {
-                    String? model =
-                        viewModel.selectedLanguageModel.value;
+                    String? model = viewModel.selectedLanguageModel.value;
 
                     String infoBoxText;
                     if (model == null) {
@@ -172,37 +173,47 @@ class _ConversationPageState extends State<ConversationPage> {
       const Flexible(flex: 1, child: SizedBox()),
       Flexible(
         flex: 9,
-        child: Card(
-          color: userInput
-              ? Colors.blue.withOpacity(0.5)
-              : Colors.white.withOpacity(0.1),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListenableBuilder(
-                listenable: viewModel.incomingMessage,
-                builder: (context, _) {
-                  String messageText;
-                  if (message.done) {
-                    messageText = message.text ?? 'Failed to get message';
-                  } else {
-                    messageText =
-                        viewModel.incomingMessage.value ?? '...';
-                  }
+        child: ListenableBuilder(
+            listenable: viewModel.incomingMessage,
+            builder: (context, _) {
+              String messageText;
+              if (message.done) {
+                messageText = message.text ?? 'Failed to get message';
+              } else {
+                messageText = viewModel.incomingMessage.value ?? '...';
+              }
 
-                  return messageText == '...'
-                      ? const LoadingWidget(
+              return messageText == '...'
+                  ? Card(
+                      color: Colors.white.withOpacity(0.1),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: LoadingWidget(
                           dimension: 40,
-                        )
-                      : MessageCard(
+                        ),
+                      ),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MessageCard(
                           messageText: messageText,
                           conversing: !message.done,
                           incomingMessage: userInput || message.done
                               ? null
                               : viewModel.incomingMessage,
-                        );
-                }),
-          ),
-        ),
+                          date: DateTime.fromMillisecondsSinceEpoch(
+                              message.createdOn ?? 0),
+                          backgroundColor: userInput
+                              ? Colors.blue.withOpacity(0.5)
+                              : Colors.white.withOpacity(0.1),
+                        ),
+                        const SizedBox(
+                          height: 24,
+                        ),
+                      ],
+                    );
+            }),
       ),
     ];
 
@@ -256,6 +267,77 @@ class _ConversationPageState extends State<ConversationPage> {
         ),
       ),
     );
+  }
+
+  TextButton buildTitle(BuildContext context) {
+    return TextButton(
+      style: ButtonStyle(
+          foregroundColor:
+              MaterialStateColor.resolveWith((states) => Colors.white)),
+      child: ListenableBuilder(
+          listenable: viewModel.scaffoldTitle,
+          builder: (context, _) {
+            return Text(
+              viewModel.scaffoldTitle.value ?? '',
+              style: const TextStyle(fontSize: 20),
+            );
+          }),
+      onPressed: () {
+        if (!widget.archivedConversation) {
+          showBottomModal(context);
+        }
+      },
+    );
+  }
+
+  IconButton buildCreateConversationButton() {
+    return IconButton(
+      onPressed: () {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          ConversationPage.routeName,
+          (route) => false,
+        );
+      },
+      icon: const Icon(Icons.add),
+      color: Colors.white,
+    );
+  }
+
+  IconButton buildSettingsButton(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return Navigator(
+                initialRoute: SettingsPage.routeName,
+                onGenerateInitialRoutes: (navigator, initialRoute) {
+                  return [
+                    MaterialPageRoute(builder: (ctx) => const SettingsPage()),
+                  ];
+                },
+              );
+            });
+      },
+      icon: const Icon(Icons.handyman_outlined),
+      color: Colors.white,
+    );
+  }
+
+  void showBottomModal(context) {
+    showModalBottomSheet(
+        context: context,
+        builder: (ctx) => LocalModelList(
+              onSelectItem: (LocalModel? model) async {
+                if (model != null) {
+                  await SettingService()
+                      .put(Settings.selectedLocalModelIdentifier, model.name);
+                  viewModel.scaffoldTitle.value = model.name;
+                }
+
+                Navigator.of(context).pop();
+              },
+            ));
   }
 }
 
