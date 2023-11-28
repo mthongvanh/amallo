@@ -1,7 +1,8 @@
 # amallo
 
-Simple GUI to query a local Ollama API server for inference written in Flutter
+Simple GUI to query a local Ollama API server for inference written in Flutter and manage large language models
 - Add models from Ollama servers
+- Create local models from Modelfile with template, parameter, adapter and license options
 - Copy/Delete installed models
 - View Modelfile information, including system prompt template and model parameters
 - Save/Delete conversations
