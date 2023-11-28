@@ -1,3 +1,4 @@
+import 'package:amallo/screens/add_model/create_model/create_model_page.dart';
 import 'package:amallo/screens/add_model/download_model/download_model.dart';
 import 'package:flutter/material.dart';
 
@@ -39,13 +40,10 @@ class _AddModelScreenState extends State<AddModelScreen> {
               return <Widget>[];
             },
             body: const TabBarView(
+              physics: NeverScrollableScrollPhysics(),
               children: [
-                DownloadModelScreen(),
-                Center(
-                  child: Text(
-                    'Create a new model here',
-                  ),
-                ),
+                DownloadModelPage(),
+                CreateModelPage(),
               ],
             ),
           ),

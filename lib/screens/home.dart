@@ -1,5 +1,7 @@
 import 'package:amallo/data/models/view_model_property.dart';
 import 'package:amallo/extensions/colors.dart';
+import 'package:amallo/screens/add_model/add_model.dart';
+import 'package:amallo/screens/add_model/create_model/create_model_page.dart';
 import 'package:amallo/screens/chats.dart';
 import 'package:amallo/screens/conversation.dart';
 import 'package:amallo/screens/local_model_list.dart';
@@ -223,6 +225,7 @@ class _HomeState extends State<Home> {
       case LocalModelList.routeName:
         return MaterialPageRoute(
             builder: (ctx) => LocalModelList(
+                  editMode: true,
                   onSelectItem: (item) async {
                     _contentNavigatorKey.currentState?.pushNamed(
                       ModelDetails.routeName,
@@ -235,6 +238,15 @@ class _HomeState extends State<Home> {
             builder: (ctx) => ModelDetails(
                   modelTag: settings.arguments as String,
                 ));
+
+      case AddModelScreen.routeName:
+        return MaterialPageRoute(
+          builder: (ctx) => const AddModelScreen(),
+        );
+      case CreateModelPage.routeName:
+        return MaterialPageRoute(
+          builder: (ctx) => const CreateModelPage(),
+        );
       case ConversationPage.routeName:
       default:
         {

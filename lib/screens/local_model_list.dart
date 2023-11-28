@@ -9,9 +9,15 @@ import 'package:ollama_dart/ollama_dart.dart';
 class LocalModelList extends StatefulWidget {
   static const routeName = 'LocalModelList';
 
+  final bool editMode;
+
   final Future Function(LocalModel?)? onSelectItem;
 
-  const LocalModelList({super.key, this.onSelectItem});
+  const LocalModelList({
+    super.key,
+    this.onSelectItem,
+    required this.editMode,
+  });
 
   @override
   State<LocalModelList> createState() => _LocalModelListState();
@@ -85,147 +91,7 @@ class _LocalModelListState extends State<LocalModelList> {
                                   m?.name ?? 'Unknown model name',
                                   style: Theme.of(context).textTheme.bodyLarge,
                                 ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      m?.sizeOnDisk ?? 'Unknown size',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(left: 24.0),
-                                      child: IconButton(
-                                        onPressed: () {
-                                          showDialog(
-                                              context: context,
-                                              builder: (ctx) {
-                                                return Material(
-                                                  color: Colors.transparent,
-                                                  child: AlertDialog.adaptive(
-                                                    content: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(8.0),
-                                                          child: Text(
-                                                            'To make a copy of ${m?.name ?? 'this model'}, please enter a name without spaces or special characters.',
-                                                          ),
-                                                        ),
-                                                        // TextField(
-                                                        //   controller: _viewModel
-                                                        //       .sourceController,
-                                                        //   decoration:
-                                                        //       const InputDecoration(
-                                                        //     label: Text(
-                                                        //       'Source Model',
-                                                        //     ),
-                                                        //   ),
-                                                        //   smartDashesType:
-                                                        //       SmartDashesType
-                                                        //           .disabled,
-                                                        // ),
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(8.0),
-                                                          child: TextField(
-                                                            controller: _viewModel
-                                                                .destinationController,
-                                                            decoration:
-                                                                const InputDecoration(
-                                                              label: Text(
-                                                                'Copy Name',
-                                                              ),
-                                                            ),
-                                                            smartDashesType:
-                                                                SmartDashesType
-                                                                    .disabled,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.of(ctx,
-                                                                    rootNavigator:
-                                                                        true)
-                                                                .pop();
-                                                            _performCopy(
-                                                              ctx,
-                                                              source: m?.name,
-                                                              destination:
-                                                                  _viewModel
-                                                                      .destinationController
-                                                                      .text,
-                                                            );
-                                                          },
-                                                          child: const Text(
-                                                              'Yes')),
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.of(ctx,
-                                                                    rootNavigator:
-                                                                        true)
-                                                                .pop();
-                                                          },
-                                                          child:
-                                                              const Text('No')),
-                                                    ],
-                                                  ),
-                                                );
-                                              });
-                                        },
-                                        icon: const Icon(
-                                          Icons.copy,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      onPressed: () {
-                                        showDialog(
-                                            context: context,
-                                            builder: (ctx) {
-                                              return AlertDialog.adaptive(
-                                                content: Text(
-                                                    'Are you sure that you want to delete ${m?.name ?? 'this model'}?'),
-                                                actions: [
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        Navigator.of(ctx,
-                                                                rootNavigator:
-                                                                    true)
-                                                            .pop();
-                                                        _performDelete(
-                                                          ctx,
-                                                          modelName: m?.name,
-                                                        );
-                                                      },
-                                                      child: const Text('Yes')),
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        Navigator.of(ctx,
-                                                                rootNavigator:
-                                                                    true)
-                                                            .pop();
-                                                      },
-                                                      child: const Text('No')),
-                                                ],
-                                              );
-                                            });
-                                      },
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                trailing: buildTrailing(m),
                               ),
                               Divider(
                                 height: 0.5,
@@ -238,6 +104,124 @@ class _LocalModelListState extends State<LocalModelList> {
                 );
               }),
         ),
+      ],
+    );
+  }
+
+  buildTrailing(LocalModel? m) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          m?.sizeOnDisk ?? 'Unknown size',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        if (widget.editMode)
+          Padding(
+            padding: const EdgeInsets.only(left: 24.0),
+            child: IconButton(
+              onPressed: () {
+                showDialog(
+                    context: context,
+                    builder: (ctx) {
+                      return Material(
+                        color: Colors.transparent,
+                        child: AlertDialog.adaptive(
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  'To make a copy of ${m?.name ?? 'this model'}, please enter a name without spaces or special characters.',
+                                ),
+                              ),
+                              // TextField(
+                              //   controller: _viewModel
+                              //       .sourceController,
+                              //   decoration:
+                              //       const InputDecoration(
+                              //     label: Text(
+                              //       'Source Model',
+                              //     ),
+                              //   ),
+                              //   smartDashesType:
+                              //       SmartDashesType
+                              //           .disabled,
+                              // ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: TextField(
+                                  controller: _viewModel.destinationController,
+                                  decoration: const InputDecoration(
+                                    label: Text(
+                                      'Copy Name',
+                                    ),
+                                  ),
+                                  smartDashesType: SmartDashesType.disabled,
+                                ),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                                onPressed: () {
+                                  Navigator.of(ctx, rootNavigator: true).pop();
+                                  _performCopy(
+                                    ctx,
+                                    source: m?.name,
+                                    destination:
+                                        _viewModel.destinationController.text,
+                                  );
+                                },
+                                child: const Text('Yes')),
+                            TextButton(
+                                onPressed: () {
+                                  Navigator.of(ctx, rootNavigator: true).pop();
+                                },
+                                child: const Text('No')),
+                          ],
+                        ),
+                      );
+                    });
+              },
+              icon: const Icon(
+                Icons.copy,
+              ),
+            ),
+          ),
+        if (widget.editMode)
+          IconButton(
+            onPressed: () {
+              showDialog(
+                  context: context,
+                  builder: (ctx) {
+                    return AlertDialog.adaptive(
+                      content: Text(
+                          'Are you sure that you want to delete ${m?.name ?? 'this model'}?'),
+                      actions: [
+                        TextButton(
+                            onPressed: () {
+                              Navigator.of(ctx, rootNavigator: true).pop();
+                              _performDelete(
+                                ctx,
+                                modelName: m?.name,
+                              );
+                            },
+                            child: const Text('Yes')),
+                        TextButton(
+                            onPressed: () {
+                              Navigator.of(ctx, rootNavigator: true).pop();
+                            },
+                            child: const Text('No')),
+                      ],
+                    );
+                  });
+            },
+            icon: const Icon(
+              Icons.delete_outline,
+            ),
+          ),
       ],
     );
   }
@@ -307,9 +291,11 @@ class _LocalModelListState extends State<LocalModelList> {
           'Models',
         ),
         backgroundColor: Colors.transparent,
-        actions: [
-          _addNew(),
-        ],
+        actions: widget.editMode
+            ? [
+                _addNew(),
+              ]
+            : null,
       ),
     );
   }
@@ -321,13 +307,14 @@ class _LocalModelListState extends State<LocalModelList> {
     );
   }
 
-  _presentCreateNewModal() {
-    showBottomSheet(
-        backgroundColor: Colors.transparent,
-        context: context,
-        builder: (_) {
-          return const AddModelScreen();
-        });
+  _presentCreateNewModal() async {
+    Navigator.of(context)
+        .pushNamed(
+          AddModelScreen.routeName,
+        )
+        .then(
+          (value) => _viewModel.getTags(),
+        );
   }
 }
 

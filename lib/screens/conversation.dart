@@ -328,6 +328,7 @@ class _ConversationPageState extends State<ConversationPage> {
     showModalBottomSheet(
         context: context,
         builder: (ctx) => LocalModelList(
+              editMode: false,
               onSelectItem: (LocalModel? model) async {
                 if (model != null) {
                   await SettingService()
