@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 
 import '../../../widgets/transfer_list.dart';
 
-class DownloadModelScreen extends StatefulWidget {
+class DownloadModelPage extends StatefulWidget {
   static const routeName = 'downloadModel';
 
-  const DownloadModelScreen({super.key});
+  const DownloadModelPage({super.key});
 
   @override
-  State<DownloadModelScreen> createState() => _DownloadModelScreenState();
+  State<DownloadModelPage> createState() => _DownloadModelPageState();
 }
 
-class _DownloadModelScreenState extends State<DownloadModelScreen> {
+class _DownloadModelPageState extends State<DownloadModelPage> {
   final DownloadModelViewModel _downloadModelViewModel =
       DownloadModelViewModel();
 

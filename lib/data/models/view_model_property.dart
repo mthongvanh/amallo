@@ -13,8 +13,9 @@ class ViewModelProperty<T> extends ChangeNotifier {
 
   ViewModelProperty._(this._defaultValue);
 
-  factory ViewModelProperty([T? defaultValue]) =>
-      ViewModelProperty._(defaultValue);
+  factory ViewModelProperty([T? defaultValue]) {
+    return ViewModelProperty._(defaultValue)..value = defaultValue;
+  }
 
   set value(newValue) {
     if (newValue != _value) {
@@ -23,7 +24,7 @@ class ViewModelProperty<T> extends ChangeNotifier {
     }
   }
 
-  T? get value => _value ?? _defaultValue;
+  T? get value => _value;
 
   bind(key) async {
     var v = await SettingService().get(key);

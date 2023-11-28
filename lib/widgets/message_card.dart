@@ -1,6 +1,6 @@
+import 'package:amallo/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../data/models/view_model_property.dart';
 import 'elapsed_time.dart';
@@ -57,21 +57,7 @@ class MessageCard extends StatelessWidget {
         data: text,
         padding: const EdgeInsets.all(24.0),
         // syntaxHighlighter: CodeHighlighter(),
-        styleSheet: MarkdownStyleSheet(
-          p: const TextStyle(color: Colors.white70, height: 1.65),
-          listBullet: const TextStyle(color: Colors.white70),
-          codeblockPadding: const EdgeInsets.all(16.0),
-          code: GoogleFonts.robotoMono().copyWith(
-            color: Colors.white70,
-            fontSize: 14,
-            backgroundColor: Colors.transparent,
-            overflow: TextOverflow.visible,
-          ),
-          codeblockDecoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
+        styleSheet: CodeStyleSheet(),
         // builders: {
         //   'code': CodeElementBuilder(),
         // },
