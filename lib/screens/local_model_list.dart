@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:amallo/data/models/view_model_property.dart';
 import 'package:amallo/screens/add_model/add_model.dart';
+import 'package:amallo/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:amallo/widgets/loading.dart';
 import 'package:ollama_dart/ollama_dart.dart';
@@ -375,10 +376,14 @@ class LocalModelListViewModel {
 }
 
 class LocalModelService {
-  Future<List<LocalModel?>?> getTags() async {
+  Future<List<LocalModel?>?> getTags({String? baseUrl}) async {
     List<LocalModel?>? data;
     try {
-      ModelsResponse result = await OllamaClient().listModels();
+      baseUrl ??= await SettingService().serverAddress();
+
+      ModelsResponse result = await OllamaClient(
+        baseUrl: baseUrl,
+      ).listModels();
       if (result.models?.isNotEmpty ?? false) {
         data = result.models!.map((Model tagModel) {
           return LocalModel(
@@ -395,19 +400,29 @@ class LocalModelService {
     return data;
   }
 
-  Future deleteModel(String modelName) async {
+  Future deleteModel(String modelName, {String? baseUrl}) async {
     try {
-      await OllamaClient()
-          .deleteModel(request: DeleteModelRequest(name: modelName));
+      baseUrl ??= await SettingService().serverAddress();
+      await OllamaClient(
+        baseUrl: baseUrl,
+      ).deleteModel(
+        request: DeleteModelRequest(
+          name: modelName,
+        ),
+      );
     } catch (e) {
       debugPrint(e.toString());
       rethrow;
     }
   }
 
-  Future copyModel(String source, {required String destination}) async {
+  Future copyModel(String source,
+      {required String destination, String? baseUrl}) async {
     try {
-      await OllamaClient().copyModel(
+      baseUrl ??= await SettingService().serverAddress();
+      await OllamaClient(
+        baseUrl: baseUrl,
+      ).copyModel(
           request: CopyModelRequest(
         source: source,
         destination: destination,
@@ -415,6 +430,60 @@ class LocalModelService {
     } catch (e) {
       debugPrint(e.toString());
       rethrow;
+    }
+  }
+
+  Future<ModelInfo> modelInfo(
+    String modelName, {
+    String? baseUrl,
+  }) async {
+    baseUrl ??= await SettingService().serverAddress();
+
+    ModelInfo response = await OllamaClient(
+      baseUrl: baseUrl,
+    ).showModelInfo(
+      request: ModelInfoRequest(
+        name: modelName,
+      ),
+    );
+
+    return response;
+  }
+
+  Future<CreateModelResponse> createModel(
+    String modelName,
+    String modelfile, {
+    String? baseUrl,
+  }) async {
+    baseUrl ??= await SettingService().serverAddress();
+
+    CreateModelResponse response = await OllamaClient(
+      baseUrl: baseUrl,
+    ).createModel(
+      request: CreateModelRequest(
+        name: modelName,
+        modelfile: modelfile,
+      ),
+    );
+
+    return response;
+  }
+
+  Future<Stream<PullModelResponse>> pullModelStream(modelName,
+      {String? baseUrl}) async {
+    try {
+      baseUrl ??= await SettingService().serverAddress();
+
+      Stream<PullModelResponse> response = OllamaClient(
+        baseUrl: baseUrl,
+      ).pullModelStream(
+        request: PullModelRequest(
+          name: modelName,
+        ),
+      );
+      return response;
+    } catch (e) {
+      throw Exception('An error occurred while pulling hte model: $modelName');
     }
   }
 }

@@ -491,13 +491,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
-  ollama_api_client:
-    dependency: "direct main"
-    description:
-      path: "../ollama_api_client"
-      relative: true
-    source: path
-    version: "0.0.1"
   ollama_dart:
     dependency: "direct main"
     description:

@@ -9,19 +9,21 @@ class ModelDetailsViewModel {
 
   init(String modelTag) {
     this.modelTag = modelTag;
-    _loadModel(onData: (value) {
-      if (value?.isNotEmpty ?? false) {
-        for (LocalModel? element in value ?? []) {
-          if (element?.name == modelTag) {
-            OllamaClient()
-                .showModelInfo(request: ModelInfoRequest(name: modelTag))
-                .then((ModelInfo value) {
-              model.value = value;
-            });
+    _loadModel(
+      onData: (value) {
+        if (value?.isNotEmpty ?? false) {
+          for (LocalModel? element in value ?? []) {
+            if (element?.name == modelTag) {
+              LocalModelService().modelInfo(modelTag).then(
+                (ModelInfo value) {
+                  model.value = value;
+                },
+              );
+            }
           }
         }
-      }
-    });
+      },
+    );
   }
 
   _loadModel({Function(List<LocalModel?>?)? onData}) async {

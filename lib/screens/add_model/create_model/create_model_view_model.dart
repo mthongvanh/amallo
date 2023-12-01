@@ -1,4 +1,5 @@
 import 'package:amallo/data/models/view_model_property.dart';
+import 'package:amallo/screens/local_model_list.dart';
 import 'package:flutter/widgets.dart';
 import 'package:ollama_dart/ollama_dart.dart';
 
@@ -61,11 +62,9 @@ class CreateModelViewModel {
 
     try {
       busy.value = true;
-      CreateModelResponse response = await OllamaClient().createModel(
-        request: CreateModelRequest(
-          name: modelNameController.text.trim(),
-          modelfile: modelfile.trim(),
-        ),
+      CreateModelResponse response = await LocalModelService().createModel(
+        modelNameController.text.trim(),
+        modelfile.trim(),
       );
       if (response.status == CreateModelStatus.success) {
         debugPrint('created model success');
@@ -150,12 +149,7 @@ class CreateModelViewModel {
   String buildModelfileExampleTitle() =>
       "Modelfile for ${modelSourceSelectedName.value}:";
   void loadSourceExample(modelName) {
-    OllamaClient()
-        .showModelInfo(
-            request: ModelInfoRequest(
-          name: modelName,
-        ))
-        .then(
+    LocalModelService().modelInfo(modelName).then(
           (value) => modelSourceExample.value = value.modelfile,
         );
   }
@@ -193,12 +187,7 @@ SYSTEM \"\"\"<system message>\"\"\"
 """;
   final modelTemplateAccessoryButton = 'Copy from Model';
   void loadTemplateExample(modelName) {
-    OllamaClient()
-        .showModelInfo(
-            request: ModelInfoRequest(
-          name: modelName,
-        ))
-        .then(
+    LocalModelService().modelInfo(modelName).then(
           (value) => modelTemplateController.text =
               value.template?.isNotEmpty ?? true
                   ? "TEMPLATE \"\"\"\n${value.template}\n\"\"\""
@@ -224,12 +213,7 @@ SYSTEM \"\"\"<system message>\"\"\"
       'The LICENSE instruction allows you to specify the legal license under which the model used with this Modelfile is shared or distributed.';
   final ViewModelProperty<String> modelLicenseExample = ViewModelProperty('');
   void loadLicenseExample(modelName) {
-    OllamaClient()
-        .showModelInfo(
-            request: ModelInfoRequest(
-          name: modelName,
-        ))
-        .then(
+    LocalModelService().modelInfo(modelName).then(
           (value) => modelLicenseController.text = value.license ?? '',
         );
   }
@@ -252,12 +236,7 @@ SYSTEM \"\"\"<system message>\"\"\"
   /// keyword, so we need to insert the PARAMETER keyword before each parameter entry
   /// before we compile our Modelfile
   void loadParameterExample(modelName) {
-    OllamaClient()
-        .showModelInfo(
-            request: ModelInfoRequest(
-      name: modelName,
-    ))
-        .then(
+    LocalModelService().modelInfo(modelName).then(
       (value) {
         String exampleParameters = '';
         if (value.parameters?.isNotEmpty == true) {

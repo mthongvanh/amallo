@@ -1,5 +1,5 @@
+import 'package:amallo/screens/local_model_list.dart';
 import 'package:flutter/widgets.dart';
-import 'package:ollama_dart/ollama_dart.dart';
 
 import '../data/models/pull_model_task.dart';
 
@@ -14,7 +14,7 @@ enum TransfersSortType {
 class ModelTransferService {
   static ModelTransferService? instance;
 
-  final OllamaClient _client;
+  final LocalModelService _modelService;
 
   final List<PullModelTask> _downloads = [];
 
@@ -34,10 +34,11 @@ class ModelTransferService {
     return _downloads;
   }
 
-  ModelTransferService._(this._client);
+  ModelTransferService._(this._modelService);
 
-  factory ModelTransferService([OllamaClient? client]) {
-    return instance ??= ModelTransferService._(client ?? OllamaClient());
+  factory ModelTransferService([LocalModelService? modelService]) {
+    return instance ??=
+        ModelTransferService._(modelService ?? LocalModelService());
   }
 
   void pull(
@@ -50,10 +51,8 @@ class ModelTransferService {
       }
 
       PullModelTask task = PullModelTask(
-        request: PullModelRequest(
-          name: modelName,
-        ),
-        client: _client,
+        modelName: modelName,
+        modelService: _modelService,
         handler: progressHandler,
       );
       _updateDownloads(task);
@@ -73,7 +72,7 @@ class ModelTransferService {
 
   bool downloading(String modelName) {
     for (var downloadTask in _downloads) {
-      if (downloadTask.request.name.toLowerCase() == modelName.toLowerCase()) {
+      if (downloadTask.modelName.toLowerCase() == modelName.toLowerCase()) {
         return true;
       }
     }
