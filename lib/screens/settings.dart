@@ -95,7 +95,7 @@ class SettingPageViewModel {
   }
 
   final ViewModelProperty<String> serverAddress =
-      ViewModelProperty<String>('localhost');
+      ViewModelProperty<String>('http://localhost:11434/api');
 
   final ViewModelProperty<String?> modelDefault = ViewModelProperty<String?>();
 }

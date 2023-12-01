@@ -1,4 +1,5 @@
 import 'package:amallo/data/models/view_model_property.dart';
+import 'package:amallo/screens/local_model_list.dart';
 import 'package:amallo/services/remote_data_service.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,12 @@ class DownloadModelViewModel {
 
   void downloadModel(String modelName, {ProgressHandler? onData}) {
     try {
-      ModelTransferService().pull(modelName, progressHandler: onData);
+      ModelTransferService(
+        LocalModelService(),
+      ).pull(
+        modelName,
+        progressHandler: onData,
+      );
     } catch (e) {
       rethrow;
     }

@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:amallo/data/models/chat.dart';
+import 'package:amallo/services/settings_service.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ollama_dart/ollama_dart.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../data/models/message.dart';
@@ -86,6 +88,27 @@ class ChatService {
   }
 
   FutureOr<XFile?> saveChats() => _chatDAO.save(chats.value);
+
+  Future<Stream<GenerateCompletionResponse>> generateCompletionStream(
+    String prompt, {
+    required String model,
+    List<int>? context,
+    RequestOptions? options,
+    String? baseUrl,
+  }) async {
+    baseUrl ??= await SettingService().serverAddress();
+
+    return OllamaClient(
+      baseUrl: baseUrl,
+    ).generateCompletionStream(
+      request: GenerateCompletionRequest(
+        model: model,
+        prompt: prompt,
+        context: context,
+        options: options,
+      ),
+    );
+  }
 }
 
 class MessageDAO extends ModelDAO {

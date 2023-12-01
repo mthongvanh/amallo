@@ -1,24 +1,26 @@
+import 'package:amallo/screens/local_model_list.dart';
 import 'package:ollama_dart/ollama_dart.dart';
 
 import '../../services/remote_data_service.dart';
 
 class PullModelTask {
-  PullModelTask._(this.request, this._client);
+  PullModelTask._(this.modelName, this._modelService);
 
   factory PullModelTask({
-    required PullModelRequest request,
-    required OllamaClient client,
+    required String modelName,
+    required LocalModelService modelService,
     ProgressHandler? handler,
   }) {
-    var pmt = PullModelTask._(request, client);
+    var pmt = PullModelTask._(modelName, modelService);
     if (handler != null) {
       pmt.addListener(handler);
     }
     return pmt;
   }
 
-  final PullModelRequest request;
-  final OllamaClient _client;
+  // final PullModelRequest request;
+  final String modelName;
+  final LocalModelService _modelService;
 
   late DateTime _createdOn;
   DateTime get createdOn => _createdOn;
@@ -39,13 +41,12 @@ class PullModelTask {
 
   final List<ProgressHandler> listeners = [];
 
-  start() {
+  start() async {
     try {
-      stream = _client
-          .pullModelStream(
-            request: request,
-          )
-          .asBroadcastStream();
+      stream = await _modelService.pullModelStream(
+        modelName,
+      );
+      stream = stream.asBroadcastStream();
 
       stream.listen(
         (event) {
