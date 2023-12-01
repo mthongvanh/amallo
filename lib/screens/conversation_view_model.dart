@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
-import 'package:ollama_api_client/ollama_api_client.dart';
+import 'package:ollama_dart/ollama_dart.dart';
 
 import '../data/enums/message_source.dart';
 import '../data/models/chat.dart';
@@ -15,8 +15,6 @@ import 'local_model_list.dart';
 
 class ConversationViewModel {
   final String chatUuid;
-
-  final OllamaClient client = OllamaClient();
 
   final ViewModelProperty<ChatThread> thread = ViewModelProperty(ChatThread());
 
@@ -34,7 +32,7 @@ class ConversationViewModel {
 
   final ViewModelProperty<String> scaffoldTitle = ViewModelProperty<String>();
 
-  Stream<GenerateResponse>? _response;
+  Stream<GenerateCompletionResponse>? _response;
 
   Message? _currentMessage;
 
@@ -73,73 +71,68 @@ class ConversationViewModel {
   }
 
   Future generateFromPrompt([promptText]) async {
-    String prompt = promptText ?? controller.text;
-    if (busy.value || prompt.isEmpty) {
-      return;
-    }
-
-    List? messageContext;
-    await addMessage(
-      _createMessage(
-        MessageSource.userInput,
-        prompt,
-        modelName: selectedLanguageModel.value ?? scaffoldTitle.value,
-      ),
-    );
-
-    /// continue/begin a new conversation
-    Message m;
-    if (!_didSaveChat) {
-      m = beginConversation(prompt);
-    } else {
-      Message? lastGeneratedMessage = ChatService()
-          .history
-          .where((element) => element.source == MessageSource.generated.name)
-          .lastOrNull;
-      if (lastGeneratedMessage != null) {
-        messageContext = lastGeneratedMessage.context;
-      }
-      m = continueConversation();
-    }
-    await addMessage(m);
-
-    busy.value = true;
-
     try {
-      OllamaApiResult<Stream<GenerateResponse>?> result =
-          await client.generateStreamed(
-        GenerateRequestParams(
-          prompt: prompt,
-          context: messageContext,
-          model: selectedLanguageModel.value,
+      String prompt = promptText ?? controller.text;
+      if (busy.value || prompt.isEmpty) {
+        return;
+      }
+
+      List<int>? messageContext;
+      await addMessage(
+        _createMessage(
+          MessageSource.userInput,
+          prompt,
+          modelName: selectedLanguageModel.value ?? scaffoldTitle.value,
         ),
       );
 
-      if (result.success) {
-        bool didStartResponse = false;
-        _response = result.data;
-        _response?.listen((value) async {
-          /// reset the placeholder text on receiving the initial response
-          if (!didStartResponse) {
-            didStartResponse = true;
-            _currentMessage?.text = '';
-          }
+      /// continue/begin a new conversation
+      Message m;
+      if (!_didSaveChat) {
+        m = beginConversation(prompt);
+      } else {
+        Message? lastGeneratedMessage = ChatService()
+            .history
+            .where((element) => element.source == MessageSource.generated.name)
+            .lastOrNull;
+        if (lastGeneratedMessage != null) {
+          messageContext = List<int>.from(lastGeneratedMessage.context ?? []);
+        }
+        m = continueConversation();
+      }
+      await addMessage(m);
 
-          _handleResponseGeneration(value);
-        });
-      } else {}
+      busy.value = true;
+      Stream<GenerateCompletionResponse> result =
+          await ChatService().generateCompletionStream(
+        prompt,
+        context: messageContext,
+        model: selectedLanguageModel.value ?? '',
+      );
+
+      bool didStartResponse = false;
+      _response = result;
+      _response?.listen((value) async {
+        /// reset the placeholder text on receiving the initial response
+        if (!didStartResponse) {
+          didStartResponse = true;
+          _currentMessage?.text = '';
+        }
+
+        _handleResponseGeneration(value);
+      });
     } catch (e) {
       debugPrint('error: ${e.toString()}');
       busy.value = false;
     }
   }
 
-  void _handleResponseGeneration(GenerateResponse generated) {
+  void _handleResponseGeneration(GenerateCompletionResponse generated) {
     /// begin processing the incoming text
-    if (!generated.done) {
+    if (!(generated.done ?? true)) {
       /// append text to message
       String currentText = _currentMessage?.text ?? '';
-      _currentMessage?.text = currentText + generated.response;
+      _currentMessage?.text = currentText + (generated.response ?? '');
       incomingMessage.value = _currentMessage?.text;
     } else {
       /// update the message with final statistics and context

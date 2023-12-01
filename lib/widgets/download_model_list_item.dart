@@ -21,7 +21,7 @@ class _DownloadModelListItemState extends State<DownloadModelListItem> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget._pullModelTask.request.name,
+          widget._pullModelTask.modelName,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(

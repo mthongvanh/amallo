@@ -5,7 +5,6 @@ import 'package:amallo/services/chat_service.dart';
 import 'package:amallo/services/database.dart';
 import 'package:amallo/services/settings_service.dart';
 import 'package:flutter/material.dart';
-import 'package:ollama_api_client/ollama_api_client.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -76,8 +75,7 @@ class SplashBloc {
     } catch (e) {
       debugPrint('invalid server');
     }
-    var client = OllamaClient(host: host);
-    debugPrint("Ollama Client host: ${client.host}");
+    debugPrint("Ollama Client host: $host");
 
     _readyController.sink.add(cs);
   }
